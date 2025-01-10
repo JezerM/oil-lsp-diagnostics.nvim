@@ -1,0 +1,50 @@
+*oil-lsp-diagnostics*
+--------------------------------------------------------------------------------
+INTRODUCTION                                           *oil-lsp-diagnostics.txt*
+
+  1. Config                                         |oil-lsp-diagnostics-config|
+  2. Options                                        |oil-lsp-diagnostics-options|
+
+--------------------------------------------------------------------------------
+CONFIG                                              *oil-lsp-diagnostics-config*
+
+>lua
+    require("oil-lsp-diagnostics").setup({
+        diagnostic_colors = {
+            error = "DiagnosticError",
+            warn  = "DiagnosticWarn",
+            info  = "DiagnosticInfo",
+            hint  = "DiagnosticHint",
+        },
+        diagnostic_symbols = {
+            error = "",
+            warn = "",
+            info = "",
+            hint = "󰌶",
+        }
+    })
+<
+
+--------------------------------------------------------------------------------
+OPTIONS                                            *oil-lsp-diagnostics-options*
+
+diagnostic_colors                        *oil-lsp-diagnostics.diagnostic_colors*
+    type: `table`
+
+    Properties:
+        {error} `string` Highlight group for error diagnostics
+        {warn}  `string` Highlight group for warn diagnostics
+        {info}  `string` Highlight group for info diagnostics
+        {hint}  `string` Highlight group for hint diagnostics
+
+
+diagnostic_symbols                      *oil-lsp-diagnostics.diagnostic_symbols*
+    type: `table`
+
+    Properties:
+        {error} `string` Symbol text for error diagnostics
+        {warn}  `string` Symbol text for warn diagnostics
+        {info}  `string` Symbol text for info diagnostics
+        {hint}  `string` Symbol text for hint diagnostics
+
+vim:tw=80:ts=2:ft=help:norl:syntax=help:
