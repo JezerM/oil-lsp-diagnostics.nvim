@@ -10,7 +10,7 @@ Install this plugin with any plugin manager, e.g. Lazy.nvim:
 
 ```lua
 {
-    "JezerM/oil-lsp-diagnostics",
+    "JezerM/oil-lsp-diagnostics.nvim",
     dependencies = { "stevearc/oil.nvim" },
     opts = {}
 }
