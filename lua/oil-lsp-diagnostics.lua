@@ -63,10 +63,10 @@ local function add_lsp_extmarks(buffer)
     for n = 1, vim.api.nvim_buf_line_count(buffer) do
         local dir = oil.get_current_dir(buffer)
         local entry = oil.get_entry_on_line(buffer, n)
-        local is_folder = entry and entry.type == "directory" or false
+        local is_dir = entry and entry.type == "directory" or false
         local diagnostics
 
-        if is_folder then
+        if is_dir then
             diagnostics = get_directory_diagnostics_summary(dir .. entry.name .. "/")
         else
             local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
