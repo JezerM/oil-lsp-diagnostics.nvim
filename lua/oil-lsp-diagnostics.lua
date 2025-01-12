@@ -29,13 +29,21 @@ local function get_buf_from_path(path)
     return nil
 end
 
-local function get_buf_diagnostics_summary(buffer)
+local function get_diagnostics_summary(buffer_or_dir, is_dir)
     local severities = { error = 0, warn = 0, info = 0, hint = 0 }
+    local diagnostic_getter = is_dir and function(buf)
+        return vim.startswith(vim.api.nvim_buf_get_name(buf), buffer_or_dir)
+    end or function(buf)
+        return buf == buffer_or_dir
+    end
 
-    severities.error = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.ERROR })
-    severities.warn = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.WARN })
-    severities.info = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.INFO })
-    severities.hint = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.HINT })
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if diagnostic_getter(buf) then
+            for key, severity in pairs(severities) do
+                severities[key] = severities[key] + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity[string.upper(key)] })
+            end
+        end
+    end
 
     return severities
 end
@@ -46,9 +54,16 @@ local function add_lsp_extmarks(buffer)
     for n = 1, vim.api.nvim_buf_line_count(buffer) do
         local dir = oil.get_current_dir(buffer)
         local entry = oil.get_entry_on_line(buffer, n)
-        local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
-        local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
-        local diagnostics = is_active and get_buf_diagnostics_summary(file_buf) or nil
+        local is_dir = entry and entry.type == "directory" or false
+        local diagnostics
+
+        if is_dir then
+            diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
+        else
+            local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
+            local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
+            diagnostics = is_active and get_diagnostics_summary(file_buf, false) or get_diagnostics_summary(dir .. entry.name, true)
+        end
 
         if diagnostics then
             local p = 0
