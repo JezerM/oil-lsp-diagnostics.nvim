@@ -40,15 +40,43 @@ local function get_buf_diagnostics_summary(buffer)
     return severities
 end
 
+local function get_directory_diagnostics_summary(dir)
+    local severities = { error = 0, warn = 0, info = 0, hint = 0 }
+    local bufs = vim.api.nvim_list_bufs()
+
+    for _, buf in ipairs(bufs) do
+        local name = vim.api.nvim_buf_get_name(buf)
+        if vim.startswith(name, dir) then
+            severities.error = severities.error + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.ERROR })
+            severities.warn = severities.warn + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.WARN })
+            severities.info = severities.info + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.INFO })
+            severities.hint = severities.hint + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.HINT })
+        end
+    end
+
+    return severities
+end
+
 local function add_lsp_extmarks(buffer)
     vim.api.nvim_buf_clear_namespace(buffer, namespace, 0, -1)
 
     for n = 1, vim.api.nvim_buf_line_count(buffer) do
         local dir = oil.get_current_dir(buffer)
         local entry = oil.get_entry_on_line(buffer, n)
-        local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
-        local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
-        local diagnostics = is_active and get_buf_diagnostics_summary(file_buf) or nil
+        local is_folder = entry and entry.type == "directory" or false
+        local diagnostics
+
+        if is_folder then
+            diagnostics = get_directory_diagnostics_summary(dir .. entry.name .. "/")
+        else
+            local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
+            local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
+            if is_active then
+                diagnostics = get_buf_diagnostics_summary(file_buf)
+            else
+                diagnostics = get_directory_diagnostics_summary(dir .. entry.name)
+            end
+        end
 
         if diagnostics then
             local p = 0
@@ -89,6 +117,9 @@ local function setup(config)
             })
         end,
     })
+end
+
+local function test()
 end
 
 return {
