@@ -119,9 +119,6 @@ local function setup(config)
     })
 end
 
-local function test()
-end
-
 return {
     setup = setup,
 }
