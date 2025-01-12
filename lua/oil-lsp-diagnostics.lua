@@ -29,28 +29,19 @@ local function get_buf_from_path(path)
     return nil
 end
 
-local function get_buf_diagnostics_summary(buffer)
+local function get_diagnostics_summary(buffer_or_dir, is_dir)
     local severities = { error = 0, warn = 0, info = 0, hint = 0 }
+    local diagnostic_getter = is_dir and function(buf)
+        return vim.startswith(vim.api.nvim_buf_get_name(buf), buffer_or_dir)
+    end or function(buf)
+        return buf == buffer_or_dir
+    end
 
-    severities.error = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.ERROR })
-    severities.warn = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.WARN })
-    severities.info = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.INFO })
-    severities.hint = #vim.diagnostic.get(buffer, { severity = vim.diagnostic.severity.HINT })
-
-    return severities
-end
-
-local function get_directory_diagnostics_summary(dir)
-    local severities = { error = 0, warn = 0, info = 0, hint = 0 }
-    local bufs = vim.api.nvim_list_bufs()
-
-    for _, buf in ipairs(bufs) do
-        local name = vim.api.nvim_buf_get_name(buf)
-        if vim.startswith(name, dir) then
-            severities.error = severities.error + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.ERROR })
-            severities.warn = severities.warn + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.WARN })
-            severities.info = severities.info + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.INFO })
-            severities.hint = severities.hint + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.HINT })
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if diagnostic_getter(buf) then
+            for key, severity in pairs(severities) do
+                severities[key] = severities[key] + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity[string.upper(key)] })
+            end
         end
     end
 
@@ -67,15 +58,11 @@ local function add_lsp_extmarks(buffer)
         local diagnostics
 
         if is_dir then
-            diagnostics = get_directory_diagnostics_summary(dir .. entry.name .. "/")
+            diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
         else
             local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
             local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
-            if is_active then
-                diagnostics = get_buf_diagnostics_summary(file_buf)
-            else
-                diagnostics = get_directory_diagnostics_summary(dir .. entry.name)
-            end
+            diagnostics = is_active and get_diagnostics_summary(file_buf, false) or get_diagnostics_summary(dir .. entry.name, true)
         end
 
         if diagnostics then
