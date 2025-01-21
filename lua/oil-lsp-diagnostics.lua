@@ -57,12 +57,14 @@ local function add_lsp_extmarks(buffer)
         local is_dir = entry and entry.type == "directory" or false
         local diagnostics
 
-        if is_dir then
-            diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
-        else
-            local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
-            local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
-            diagnostics = is_active and get_diagnostics_summary(file_buf, false) or get_diagnostics_summary(dir .. entry.name, true)
+        if entry then
+            if is_dir then
+                diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
+            else
+                local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
+                local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
+                diagnostics = is_active and get_diagnostics_summary(file_buf, false) or get_diagnostics_summary(dir .. entry.name, true)
+            end
         end
 
         if diagnostics then
