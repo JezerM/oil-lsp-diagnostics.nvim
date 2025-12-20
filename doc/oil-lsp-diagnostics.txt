@@ -10,6 +10,8 @@ CONFIG                                              *oil-lsp-diagnostics-config*
 
 >lua
     require("oil-lsp-diagnostics").setup({
+        count = true,
+        parent_dirs = true,
         diagnostic_colors = {
             error = "DiagnosticError",
             warn  = "DiagnosticWarn",
@@ -27,6 +29,20 @@ CONFIG                                              *oil-lsp-diagnostics-config*
 
 --------------------------------------------------------------------------------
 OPTIONS                                            *oil-lsp-diagnostics-options*
+
+count                                     *oil-lsp-diagnostics.count*
+    type: `boolean`
+    default: `true`
+
+    Whether to show the diagnostic count next to each symbol.
+
+
+parent_dirs        *oil-lsp-diagnostics.parent_dirs*
+    type: `boolean`
+    default: `true`
+
+    Whether to show aggregated diagnostics for directory entries.
+
 
 diagnostic_colors                        *oil-lsp-diagnostics.diagnostic_colors*
     type: `table`

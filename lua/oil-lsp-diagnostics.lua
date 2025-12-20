@@ -3,6 +3,8 @@ local util = require("oil.util")
 local namespace = vim.api.nvim_create_namespace("oil-lsp-diagnostics")
 
 local default_config = {
+    count = true,
+    parent_dirs = true,
     diagnostic_colors = {
         error = "DiagnosticError",
         warn = "DiagnosticWarn",
@@ -32,13 +34,26 @@ end
 
 local function get_diagnostics_summary(buffer_or_dir, is_dir)
     local severities = { error = 0, warn = 0, info = 0, hint = 0 }
-    local diagnostic_getter = is_dir
-            and function(buf)
-                return vim.startswith(vim.api.nvim_buf_get_name(buf), buffer_or_dir)
-            end
-        or function(buf)
+
+    local diagnostic_getter
+    if is_dir then
+        local dir = buffer_or_dir
+        if type(dir) == "string" and not vim.endswith(dir, "/") then
+            dir = dir .. "/"
+        end
+
+        diagnostic_getter = function(buf)
+            return vim.startswith(vim.api.nvim_buf_get_name(buf), dir)
+        end
+    elseif type(buffer_or_dir) == "number" then
+        diagnostic_getter = function(buf)
             return buf == buffer_or_dir
         end
+    else
+        diagnostic_getter = function(buf)
+            return vim.api.nvim_buf_get_name(buf) == buffer_or_dir
+        end
+    end
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if diagnostic_getter(buf) then
@@ -63,28 +78,39 @@ local function add_lsp_extmarks(buffer)
 
         if entry then
             if is_dir then
-                diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
+                if current_config.parent_dirs then
+                    diagnostics = get_diagnostics_summary(dir .. entry.name .. "/", true)
+                end
             else
-                local file_buf = entry and get_buf_from_path(dir .. entry.name) or nil
-                local is_active = file_buf and vim.api.nvim_buf_is_loaded(file_buf) or false
-                diagnostics = is_active and get_diagnostics_summary(file_buf, false)
-                    or get_diagnostics_summary(dir .. entry.name, true)
+                local file_path = dir .. entry.name
+                local file_buf = get_buf_from_path(file_path)
+                diagnostics = file_buf and get_diagnostics_summary(file_buf, false)
+                    or get_diagnostics_summary(file_path, false)
             end
         end
 
         if diagnostics then
-            local p = 0
-            for key, severity in pairs(diagnostics) do
-                if severity > 0 then
+            local virt_text = {}
+            for i, key in ipairs({ "error", "warn", "info", "hint" }) do
+                local count = diagnostics[key]
+                if count and count > 0 then
                     local color = current_config.diagnostic_colors[key]
                     local symbol = current_config.diagnostic_symbols[key]
-                    vim.api.nvim_buf_set_extmark(buffer, namespace, n - 1, 0, {
-                        virt_text = { { symbol, color } },
-                        virt_text_pos = "eol",
-                        priority = p,
-                    })
-                    p = p + 1
+
+                    local prefix = (i == 1) and "" or " "
+                    local text = prefix .. symbol
+                    if current_config.count then
+                        text = text .. " " .. count
+                    end
+                    table.insert(virt_text, { text, color })
                 end
+            end
+
+            if #virt_text > 0 then
+                vim.api.nvim_buf_set_extmark(buffer, namespace, n - 1, 0, {
+                    virt_text = virt_text,
+                    virt_text_pos = "eol",
+                })
             end
         end
     end
