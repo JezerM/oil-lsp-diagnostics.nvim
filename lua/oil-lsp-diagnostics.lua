@@ -57,7 +57,7 @@ local function get_diagnostics_summary(buffer_or_dir, is_dir)
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if diagnostic_getter(buf) then
-            for key, severity in pairs(severities) do
+            for key, _ in pairs(severities) do
                 severities[key] = severities[key]
                     + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity[string.upper(key)] })
             end
@@ -91,18 +91,13 @@ local function add_lsp_extmarks(buffer)
 
         if diagnostics then
             local virt_text = {}
-            for i, key in ipairs({ "error", "warn", "info", "hint" }) do
+            for _, key in ipairs({ "error", "warn", "info", "hint" }) do
                 local count = diagnostics[key]
                 if count and count > 0 then
                     local color = current_config.diagnostic_colors[key]
                     local symbol = current_config.diagnostic_symbols[key]
-
-                    local prefix = (i == 1) and "" or " "
-                    local text = prefix .. symbol
-                    if current_config.count then
-                        text = text .. " " .. count
-                    end
-                    table.insert(virt_text, { text, color })
+                    local text = current_config.count and (count .. symbol) or symbol
+                    table.insert(virt_text, { text .. "  ", color })
                 end
             end
 
