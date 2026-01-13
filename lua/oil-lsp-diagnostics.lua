@@ -105,6 +105,7 @@ local function add_lsp_extmarks(buffer)
                 vim.api.nvim_buf_set_extmark(buffer, namespace, n - 1, 0, {
                     virt_text = virt_text,
                     virt_text_pos = "eol",
+                    hl_mode = "combine",
                 })
             end
         end
